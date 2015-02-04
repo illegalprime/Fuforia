@@ -1,0 +1,27 @@
+{
+  "name": "Fuforia",
+  "version": "1.0.0",
+  "description": "A node module for Vuforia that will quickly organize targets and load them based on location.",
+  "main": "fuforia.js",
+  "scripts": {
+    "test": "debug"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/illegalprime/Fuforia.git"
+  },
+  "keywords": [
+    "Vuforia",
+    "AR",
+    "Geolocation"
+  ],
+  "author": "Michael Eden",
+  "license": "GNU GPL v3",
+  "bugs": {
+    "url": "https://github.com/illegalprime/Fuforia/issues"
+  },
+  "homepage": "https://github.com/illegalprime/Fuforia",
+  "devDependencies": {
+    "mongoose": "^3.8.22"
+  }
+}
