@@ -1,72 +1,50 @@
-var mongoose = require('mongoose');
-var models   = require('./lib/models');
-
-userConfigToMongoLab = function(u) {
-    return 'mongodb://' + u.user + ':' + u.pass
-         + '@ds041561.mongolab.com:41561/' + u.db;
-}
-
-
-
-
-// Testing
-/*
-function onGetUrl(url) {
-    mongoose.connect(url);
-    var db = mongoose.connection;
-
-    db.on('error', console.error.bind(console, 'Mongo Connect Err: '));
-
-    db.once('open', function() {
-        console.log('Connected!!!');
-
-        var kittySchema = mongoose.Schema({
-            name: String
-        });
-
-        var Kitten = mongoose.model('Kitten', kittySchema);
-
-        var fluffy = new Kitten({
-            name: 'fluffy'
-        });
-        fluffy.save(function(err, fluffy) {
-            if (err) console.error(err);
-            console.log('Saved ' + fluffy.name);
-        });
-    });
-}
-
+var kd = require('kdtree');
 var fs = require('fs');
-fs.readFile('secrets/mongo.json', function(err, data) {
-    if (err) throw err;
-    onGetUrl(userConfigToMongoLab(JSON.parse(data)));
-});
-*/
 
-var target = new models.VuTarget({
-    data: 'test.dat',
-    meta: 'test.xml',
-    loc: {
-        longitude: 1,
-        latitude: -1
-    },
-    extra: 'This is an extra tag'
-});
+exports.FuServer = function(loadfile) {
+    this.serializedFile = loadfile;
+    
+    var kdTree = new kd.KDTree(3);
+    var delim  = '----POINT----';
+    var radius = 637100000;
 
-var root = new models.QuadTree({
-    items:    [],
-    children: [],
-    bbox: {
-        min: {
-            longitude: -5,
-            latitude:  -5
-        },
-        max: {
-            longitude: 5,
-            latitude:  5
-        }
+    this.rebuildTree = function() {
+        if (!checkFile(serializedFile)) return;
+
+        fs.readFile(serializedFile, function(err, data) {
+
+            var points = data.split(delim);
+            for (i in points) {
+                var point = JSON.parse(points[i]);
+                kdTree.insert(point.x, point.y, point.z, point.data);
+            }
+        });
     }
-});
 
-var doesFit = root.canFit([target.loc]);
-console.log(doesFit);
+    this.checkFile = function(filename) {
+        fs.stat(filename, function(err, stats) {
+            return !err && stats.isFile();
+        });
+    }
+
+    this.addPoint = function(longitude, latitude, dataFile, metaFile, tag) {
+        point = {
+            x: radius * Math.sin(longitude) * Math.cos(latitude),
+            y: radius * Math.sin(longitude) * Math.sin(latitude),
+            z: radius * Math.cos(longitude),
+            data: {
+                raw:   dataFile,
+                meta:  metaFile,
+                extra: tag 
+            }
+        }
+
+
+    }
+
+    addLocation = function() {
+    }
+
+    rebuildTree();
+}
+
