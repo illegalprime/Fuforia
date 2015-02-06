@@ -1,6 +1,14 @@
 # Fuforia
 A node module for Vuforia that will quickly organize targets and load them based on location.
 
+## Dependencies
+The [kdtree](http://code.google.com/p/kdtree/) C library is required. In order to install, get the latest version from [here](http://code.google.com/p/kdtree/downloads/list) and run the following commands:
+```
+    ./configure
+    make
+    sudo make install PREFIX=/usr
+```
+
 # Goals
 ## Technical
 1. Ability to upload (Geo-tagged) images to database on the fly

@@ -23,5 +23,8 @@
   "homepage": "https://github.com/illegalprime/Fuforia",
   "devDependencies": {
     "mongoose": "^3.8.22"
+  },
+  "dependencies": {
+    "kdtree": "0.0.10"
   }
 }
