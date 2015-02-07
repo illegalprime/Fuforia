@@ -8,19 +8,11 @@ exports.FuServer = function(loadfile) {
     var kdTree = new kd.KDTree(3);
     var delim  = '----POINT----';
     var radius = 637100000;
+    var loaded = false;
 
     var fileExists = function(filename, callback) {
-        return new Promise(function(resolve, reject) {
-            fs.stat(filename, (function(resolve, reject) {
-                return function (err, stats) {
-                    if (!err && stats.isFile()) {
-                        resolve();
-                    }
-                    else {
-                        reject();
-                    }
-                }
-            })(resolve, reject));
+        fs.stat(filename, function(err, stats) {
+            callback(!err && stats.isFile(), filename);
         });
     };
 
@@ -45,29 +37,29 @@ exports.FuServer = function(loadfile) {
         });
     };
 
-    var checkForFile = function(resolve, reject, isFile, file, callback) {
-        if (!isFile) {
-            console.log('Cannot find file \'' + file
-                      + '\'. Fuforia will create it!');
-            reject();
-        }
-        callback.bind(undefined, resolve, reject);
-        res();
-        fs.readFile(file, 'utf8', function(err, data) {
-            var points = data.split(delim);
-
-            for (var i = 1; i < points.length; ++i) {
-                console.log(points[i]);
-                var point = JSON.parse(points[i]);
-                kdTree.insert(point.x, point.y, point.z, point.data);
+    this.rebuildFromSaved = function(callback) {
+        var finish = function(status) {
+            loaded = true;
+            if (callback) {
+                callback(status);
             }
-        });
-    };
+        }
 
-    this.rebuildFromSaved = function() {
-        return new Promise(function(resolve, reject) {
-            // fileExists(this.serializedFile, );
-        };
+        fileExists(this.serializedFile, function(isFile, file) {
+            if (!isFile) {
+                console.log('Cannot find file \'' + file
+                          + '\'. Fuforia will create it!');
+                finish(false);
+            }
+            fs.readFile(file, 'utf8', function(err, data) {
+                var points = data.split(delim);
+                for (var i = 1; i < points.length; ++i) {
+                    var point = JSON.parse(points[i]);
+                    kdTree.insert(point.x, point.y, point.z, point.data);
+                }
+                finish(true);
+            });
+        });
     };
 
     this.addImage = function(longitude, latitude, dataFile, metaFile, tag) {
@@ -84,5 +76,9 @@ exports.FuServer = function(loadfile) {
     this.getVisibleImages = function(longitude, latitude, range) {
         var point = geoToCartesian(longitude, latitude);
         return kdTree.nearestRange(point.x, point.y, point.z, range);
+    };
+
+    this.isLoaded = function() {
+        return loaded;
     };
 }
