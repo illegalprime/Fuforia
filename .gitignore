@@ -1,5 +1,7 @@
 .*.swp
 node_modules
 secrets
-backup
 
+
+backup
+data
