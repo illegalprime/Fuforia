@@ -25,6 +25,7 @@
     "mongoose": "^3.8.22"
   },
   "dependencies": {
-    "kdtree": "0.0.10"
+    "kdtree": "0.0.10",
+    "promise": "^6.1.0"
   }
 }

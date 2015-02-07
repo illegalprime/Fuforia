@@ -1,5 +1,6 @@
 var kd = require('kdtree');
 var fs = require('fs');
+var Promise = require('promise');
 
 exports.FuServer = function(loadfile) {
     this.serializedFile = loadfile;
@@ -8,11 +9,20 @@ exports.FuServer = function(loadfile) {
     var delim  = '----POINT----';
     var radius = 637100000;
 
-    var fileExists = function(filename) {
-        fs.stat(filename, function(err, stats) {
-            return !err && stats.isFile();
+    var fileExists = function(filename, callback) {
+        return new Promise(function(resolve, reject) {
+            fs.stat(filename, (function(resolve, reject) {
+                return function (err, stats) {
+                    if (!err && stats.isFile()) {
+                        resolve();
+                    }
+                    else {
+                        reject();
+                    }
+                }
+            })(resolve, reject));
         });
-    }
+    };
 
     var geoToCartesian = function(longitude, latitude) {
         longRad = longitude * Math.PI / 180;
@@ -21,32 +31,44 @@ exports.FuServer = function(loadfile) {
             x: radius * Math.sin(longRad) * Math.cos(latRad),
             y: radius * Math.sin(longRad) * Math.sin(latRad),
             z: radius * Math.cos(longRad)
-        }
-    }
+        };
+    };
 
     var addToBackup = function(point, file) {
         var dump = JSON.stringify(point);
 
-        if (fileExists(file)) {
+        fileExists(file, function(isFile) {
             dump = '\n' + delim + '\n' + dump;
-        }
-        fs.appendFile(file, dump, function(err) { if (err) throw err; });
-    }
+            fs.appendFile(file, dump, function(err) {
+                if (err) throw err;
+            });
+        });
+    };
 
-    this.rebuildTree = function() {
-        if (!fileExists(this.serializedFile)) {
-            console.log('Cannot find file \'' + this.serializedFile + '\'. Fuforia will create it!');
-            return;
+    var checkForFile = function(resolve, reject, isFile, file, callback) {
+        if (!isFile) {
+            console.log('Cannot find file \'' + file
+                      + '\'. Fuforia will create it!');
+            reject();
         }
-        fs.readFile(this.serializedFile, function(err, data) {
-
+        callback.bind(undefined, resolve, reject);
+        res();
+        fs.readFile(file, 'utf8', function(err, data) {
             var points = data.split(delim);
-            for (i in points) {
+
+            for (var i = 1; i < points.length; ++i) {
+                console.log(points[i]);
                 var point = JSON.parse(points[i]);
                 kdTree.insert(point.x, point.y, point.z, point.data);
             }
         });
-    }
+    };
+
+    this.rebuildFromSaved = function() {
+        return new Promise(function(resolve, reject) {
+            // fileExists(this.serializedFile, );
+        };
+    };
 
     this.addImage = function(longitude, latitude, dataFile, metaFile, tag) {
         var point = geoToCartesian(longitude, latitude);
@@ -54,16 +76,13 @@ exports.FuServer = function(loadfile) {
             raw:   dataFile,
             meta:  metaFile,
             extra: tag
-        }
+        };
         kdTree.insert(point.x, point.y, point.x, point.data);
         addToBackup(point, this.serializedFile);
-    }
+    };
 
     this.getVisibleImages = function(longitude, latitude, range) {
-        var converted = geoToCartesian(longitude, latitude);
-        return kdTree.nearestRange(converted.x, converted.y, converted.z, range);
-    }
-
-    this.rebuildTree();
+        var point = geoToCartesian(longitude, latitude);
+        return kdTree.nearestRange(point.x, point.y, point.z, range);
+    };
 }
-
