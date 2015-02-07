@@ -26,6 +26,6 @@
   },
   "dependencies": {
     "kdtree": "0.0.10",
-    "promise": "^6.1.0"
+    "xml2js": "^0.4.4"
   }
 }

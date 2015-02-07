@@ -1,14 +1,16 @@
-var kd = require('kdtree');
-var fs = require('fs');
-var Promise = require('promise');
+var kd  = require('kdtree');
+var fs  = require('fs');
+var xml = require('xml2js');
 
 exports.FuServer = function(loadfile) {
     this.serializedFile = loadfile;
 
-    var kdTree = new kd.KDTree(3);
-    var delim  = '----POINT----';
-    var radius = 637100000;
-    var loaded = false;
+    var kdTree  = new kd.KDTree(3);
+    var parser  = new xml.Parser();
+    var builder = new xml.Builder();
+    var delim   = '----POINT----';
+    var radius  = 637100000;
+    var loaded  = false;
 
     var fileExists = function(filename, callback) {
         fs.stat(filename, function(err, stats) {
@@ -44,12 +46,12 @@ exports.FuServer = function(loadfile) {
                 callback(status);
             }
         }
-
         fileExists(this.serializedFile, function(isFile, file) {
             if (!isFile) {
                 console.log('Cannot find file \'' + file
                           + '\'. Fuforia will create it!');
                 finish(false);
+                return;
             }
             fs.readFile(file, 'utf8', function(err, data) {
                 var points = data.split(delim);
@@ -62,10 +64,10 @@ exports.FuServer = function(loadfile) {
         });
     };
 
-    this.addImage = function(longitude, latitude, dataFile, metaFile, tag) {
+    this.addImage = function(longitude, latitude, id, metaFile, tag) {
         var point = geoToCartesian(longitude, latitude);
         point.data = {
-            raw:   dataFile,
+            id:    id,
             meta:  metaFile,
             extra: tag
         };
@@ -73,12 +75,55 @@ exports.FuServer = function(loadfile) {
         addToBackup(point, this.serializedFile);
     };
 
-    this.getVisibleImages = function(longitude, latitude, range) {
-        var point = geoToCartesian(longitude, latitude);
-        return kdTree.nearestRange(point.x, point.y, point.z, range);
+    this.getVisibleImages = function(longitude, latitude, range, callback) {
+        var point     = geoToCartesian(longitude, latitude);
+        var neighbors = kdTree.nearestRange(point.x, point.y, point.z, range);
+        var currXML   = JSON.parse(VuforiaXML);
+        var meta      = {};
+        var count     = 0;
+
+        for (i in neighbors) {
+            neighbor = neighbors[i][3];
+            meta[neighbor.id] = neighbor.extra;
+
+            fs.readFile(neighbor.meta, 'utf8', function(err, data) {
+                if (err) {
+                    ++count;
+                    throw err;
+                }
+                parser.parseString(data, function(err, results) {
+                    if (err) {
+                        ++count;
+                        throw err;
+                    }
+                    var trackers = results.QCARConfig.Tracking;
+
+                    for (j in trackers) {
+                        currXML.QCARConfig.Tracking[0].ImageTarget =
+                            currXML.QCARConfig.Tracking[0].ImageTarget
+                                .concat(trackers[j].ImageTarget);
+                    }
+
+                    if (++count == neighbors.length) {
+                        callback(builder.buildObject(currXML), meta);
+                        return;
+                    }
+                });
+            });
+        }
     };
 
     this.isLoaded = function() {
         return loaded;
     };
+
+    var VuforiaXML = '{                                                   \
+        "QCARConfig": {                                                   \
+            "$": {                                                        \
+                "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance", \
+                "xsi:noNamespaceSchemaLocation": "qcar_config.xsd"        \
+            },                                                            \
+            "Tracking": [ { "ImageTarget": [ ] } ]                        \
+        }                                                                 \
+    }';
 }
