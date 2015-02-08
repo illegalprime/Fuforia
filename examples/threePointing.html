@@ -1,0 +1,69 @@
+<html>
+    <head>
+        <title>THREE.JS Pointing Example</title>
+        <style>
+            body { margin: 0; }
+            canvas { width: 100%; height: 100% }
+        </style>
+    </head>
+    <body>
+        <script src="https://ajax.googleapis.com/ajax/libs/threejs/r69/three.min.js"></script>
+        <script>
+            var raycaster = new THREE.Raycaster();
+            var mouse = new THREE.Vector3();
+            var white = new THREE.Color(0xffffff);
+            var green = new THREE.Color(0x00ff00);
+
+            function onMouseMove( event ) {
+                // calculate mouse position in normalized device coordinates
+                // (-1 to +1) for both components
+                mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+                mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+            }
+            window.addEventListener( 'mousemove', onMouseMove, false );
+
+            var scene = new THREE.Scene();
+            var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+            var renderer = new THREE.WebGLRenderer();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            document.body.appendChild( renderer.domElement );
+
+            var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+            var material = new THREE.MeshBasicMaterial( { color: green } );
+            var cube = new THREE.Mesh( geometry, material );
+            scene.add( cube );
+
+            camera.position.z = 5;
+
+            count = 0;
+
+            function render() {
+                window.requestAnimationFrame(render);
+
+                if (cube.material.color != green) {
+                    cube.material.color = green;
+                }
+                // update the picking ray with the camera and mouse position
+                raycaster.set( mouse, camera );
+
+                // calculate objects intersecting the picking ray
+                raycaster.set(camera.position, mouse);
+                raycaster.ray.direction.unproject( camera ).sub( camera.position ).normalize();
+
+                var intersects = raycaster.intersectObjects( scene.children );
+
+                for (i in intersects) {
+                    intersects[i].object.material.color = white;
+                }
+
+                count += 0.1;
+                cube.rotation.x = Math.sin(count);
+                cube.rotation.y = count;
+
+                renderer.render( scene, camera );
+            }
+            render();
+        </script>
+    </body>
+</html>
