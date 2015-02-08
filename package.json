@@ -1,6 +1,6 @@
 {
   "name": "Fuforia",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A node module for Vuforia that will quickly organize targets and load them based on location.",
   "main": "fuforia.js",
   "scripts": {
