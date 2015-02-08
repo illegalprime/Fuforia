@@ -88,13 +88,17 @@ exports.FuServer = function(loadfile) {
 
             fs.readFile(neighbor.meta, 'utf8', function(err, data) {
                 if (err) {
-                    ++count;
-                    throw err;
+                    if (++count == neighbors.length) {
+                        callback("", {});
+                    }
+                    return;
                 }
                 parser.parseString(data, function(err, results) {
                     if (err) {
-                        ++count;
-                        throw err;
+                        if (++count == neighbors.length) {
+                            callback("", {});
+                        }
+                        return;
                     }
                     var trackers = results.QCARConfig.Tracking;
 
@@ -106,7 +110,6 @@ exports.FuServer = function(loadfile) {
 
                     if (++count == neighbors.length) {
                         callback(builder.buildObject(currXML), meta);
-                        return;
                     }
                 });
             });
