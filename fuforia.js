@@ -11,6 +11,7 @@ exports.FuServer = function(loadfile) {
     var delim   = '----POINT----';
     var radius  = 637100000;
     var loaded  = false;
+    var hashes  = {};
 
     var fileExists = function(filename, callback) {
         fs.stat(filename, function(err, stats) {
@@ -109,12 +110,21 @@ exports.FuServer = function(loadfile) {
                     }
 
                     if (++count == neighbors.length) {
-                        callback(builder.buildObject(currXML), meta);
+                        hash = new Date().getTime();
+                        hashes[hash] = builder.buildObject(currXML);
+                        meta['hash'] = hash;
+                        callback(meta);
                     }
                 });
             });
         }
     };
+
+    this.getHash = function(hashId) {
+        var xml = hashes[hashId];
+        delete hashes[hashId];
+        return xml;
+    }
 
     this.isLoaded = function() {
         return loaded;
