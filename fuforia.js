@@ -2,14 +2,21 @@ var kd  = require('kdtree');
 var fs  = require('fs');
 var xml = require('xml2js');
 
+var PriorityQueue = require('priorityqueuejs');
+
 exports.FuServer = function(loadfile) {
     this.serializedFile = loadfile;
 
     var kdTree  = new kd.KDTree(3);
     var parser  = new xml.Parser();
     var builder = new xml.Builder();
+    var cache   = new PriorityQueue(function(a, b) {
+        return a - b;
+    });
+
     var delim   = '----POINT----';
     var radius  = 637100000;
+    var timeout = 100000;
     var loaded  = false;
     var hashes  = {};
 
@@ -111,6 +118,7 @@ exports.FuServer = function(loadfile) {
 
                     if (++count == neighbors.length) {
                         hash = new Date().getTime();
+                        cache.enq(hash);
                         hashes[hash] = builder.buildObject(currXML);
                         meta['hash'] = hash;
                         callback(meta);
@@ -121,6 +129,12 @@ exports.FuServer = function(loadfile) {
     };
 
     this.getHash = function(hashId) {
+        now  = new Date().getTime();
+        then = cache.peek();
+        if (then + timeout >= now) {
+            cache.deq();
+            delete hashes[then];
+        }
         var xml = hashes[hashId];
         delete hashes[hashId];
         return xml;
