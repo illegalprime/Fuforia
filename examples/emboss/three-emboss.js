@@ -26,7 +26,11 @@ function init() {
 
     // mesh = new THREE.Mesh(geometry, material );
     mesh = textures['crate'];
-    mesh.position.z = 0;
+    mesh.position.z = -500;
+    mesh.position.x = -300;
+    mesh.position.y = -300;
+    mesh.rotation.x += .01;
+    mesh.rotation.y += .005;
 
     scene.add( mesh );
 
@@ -40,9 +44,9 @@ function init() {
 }
 
 function animate() {
-    mesh.rotation.x += .02;
-    mesh.rotation.y += .01;
 
+    mesh.rotation.x += .01;
+    mesh.rotation.y += .005;
     render();
     requestAnimationFrame( animate );
 }
@@ -89,20 +93,32 @@ function createTextures(scale) {
                 ));
         }
         var shape = new THREE.Shape(vectors);
+        var textr = new THREE.Texture(canvas);
+        textr.needsUpdate = true;
 
-        var material = new THREE.MeshPhongMaterial({
-            map: THREE.ImageUtils.loadTexture(imgs[i].src, {}, function() {
-                renderer.render(scene, camera);
-            })
-        });
         var geometry = new THREE.ExtrudeGeometry(shape, {
-            bevelEnabled: false,
-            steps: 1,
             amount: 20,
-            material:0
+            bevelEnabled: false,
+            material: 0,
+            extrudeMaterial: 1
+        });
+        var material = new THREE.MeshBasicMaterial({
+            map: textr
         });
 
-        textures[imgs[i].id] = new THREE.Mesh(geometry,
-            new THREE.MeshFaceMaterial([material]));
+        var uvs = [];
+        uvs.push( new THREE.Vector2( 0.0, 0.0 ) );
+        uvs.push( new THREE.Vector2( 1.0, 0.0 ) );
+        uvs.push( new THREE.Vector2( 1.0, 1.0 ) );
+        // generate faces
+        geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+        geometry.faceVertexUvs[ 0 ].push( [ uvs[0], uvs[1], uvs[2] ] );
+
+        textures[imgs[i].id] = new THREE.SceneUtils.createMultiMaterialObject(
+            geometry, [material, new THREE.MeshBasicMaterial({
+                    color: 0x000000,
+                    wireframe: true,
+                    transparent: true
+                })]);
     }
 }
